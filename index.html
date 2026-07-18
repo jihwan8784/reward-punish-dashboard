@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>폐기물 마켓</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- 헤더 -->
+    <header id="header">
+      <h1>폐기물 마켓</h1>
+      <span class="header-desc">쓰레기통에 폐기물을 담으면 최적의 수거 업체를 찾아드려요</span>
+    </header>
+
+    <!-- 메인: 수거 업체 목록 -->
+    <main id="main-content">
+      <div id="bin-summary" class="bin-summary hidden">
+        <div class="bin-info">
+          <span class="bin-label">쓰레기통</span>
+          <span id="bin-count">0종 / 0kg</span>
+        </div>
+        <button id="btn-open-bin" class="btn-bin-open">쓰레기통 열기</button>
+      </div>
+
+      <h2 id="vendor-title" class="section-title">근처 수거 업체</h2>
+      <p class="section-desc">쓰레기통에 폐기물을 추가하면 각 업체의 예상 판매 금액이 표시됩니다</p>
+      <div id="vendor-list" class="vendor-list"></div>
+      <p id="empty-bin-msg" class="empty-msg">쓰레기통이 비어 있어요. 오른쪽 아래 🗑️ 버튼을 눌러 폐기물을 추가해보세요.</p>
+    </main>
+
+    <!-- FAB: 쓰레기통 버튼 -->
+    <button id="btn-trash-fab" class="fab" title="쓰레기통">🗑️</button>
+
+    <!-- ===== 쓰레기통 모달 ===== -->
+    <div id="modal-bin" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>🗑️ 쓰레기통</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- 폐기물 추가 폼 -->
+          <div class="add-waste-form">
+            <div class="add-row waste-search-row">
+              <span class="waste-search-icon">🔍</span>
+              <input type="text" id="waste-search" class="waste-search-input" placeholder="캔, 신문, 냄비, 전선처럼 아는 이름으로 찾아보세요" autocomplete="off" />
+            </div>
+            <div class="add-row waste-category-tabs" id="waste-category-tabs">
+              <button type="button" class="cat-tab active" data-cat="all">전체</button>
+              <button type="button" class="cat-tab" data-cat="metal">금속류</button>
+              <button type="button" class="cat-tab" data-cat="paper">종이류</button>
+              <button type="button" class="cat-tab" data-cat="plastic">플라스틱·비닐</button>
+            </div>
+            <div id="waste-picker-grid" class="waste-picker-grid"></div>
+            <p id="waste-picker-empty" class="waste-picker-empty hidden">일치하는 품목이 없어요. 다른 이름으로 검색해보세요.</p>
+
+            <div class="add-row selected-waste-row">
+              <span class="selected-waste-label">선택한 품목</span>
+              <span id="selected-waste-tag" class="selected-waste-tag">아직 선택하지 않았어요</span>
+            </div>
+            <div class="add-row kg-row">
+              <label id="waste-amount-label">무게 (kg)</label>
+              <input type="range" id="waste-kg-slider" min="0.1" max="100" step="0.1" value="1" />
+              <input type="number" id="waste-kg-input" value="1" min="0.1" max="100" step="0.1" />
+              <span id="waste-amount-unit">kg</span>
+              <button type="button" id="btn-add-waste" class="btn-add">추가</button>
+            </div>
+          </div>
+
+          <!-- 현재 폐기물 목록 -->
+          <div id="bin-items-section">
+            <h4 id="bin-items-title">현재 쓰레기통 (총 <span id="bin-total-kg">0</span>kg)</h4>
+            <div id="bin-items" class="bin-items"></div>
+            <button id="btn-clear-bin" class="btn-clear-bin hidden">쓰레기통 비우기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 영수증 모달 ===== -->
+    <div id="modal-receipt" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>🧾 매입 계산서</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="receipt-content" class="receipt-box">
+            <div class="receipt-header">
+              <strong id="receipt-name"></strong>
+              <span id="receipt-addr"></span>
+              <span id="receipt-date"></span>
+            </div>
+            <div class="receipt-divider"></div>
+            <table class="receipt-table">
+              <thead>
+                <tr><th>품목</th><th>단가</th><th>수량</th><th class="r-align">금액</th></tr>
+              </thead>
+              <tbody id="receipt-items"></tbody>
+              <tfoot>
+                <tr class="receipt-total-row"><td colspan="3">합계</td><td id="receipt-total" class="r-align"></td></tr>
+              </tfoot>
+            </table>
+            <div class="receipt-divider"></div>
+            <p class="receipt-thanks">감사합니다. 또 이용해 주세요.</p>
+          </div>
+          <button id="btn-download-receipt" class="btn-download">이미지로 저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 환경 신뢰도 상세 모달 ===== -->
+    <div id="modal-eco" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="eco-vendor-name"></h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="eco-score" class="eco-score"></div>
+          <h4>위반 내역</h4>
+          <div id="eco-violations" class="eco-violations"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/app.js"></script>
+  <script src="/__preview-bridge.js" data-preview-bridge></script>
+</body>
+</html>
