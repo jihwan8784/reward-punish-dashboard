@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>상벌점 관리</title>
+<link rel="stylesheet" href="/home.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <h1>상벌점 관리</h1>
+        <p class="subtitle" id="updatedAt">엑셀 파일을 업로드하면 자동으로 정리됩니다.</p>
+      </div>
+      <div class="topbar-search">
+        <input type="text" id="studentSearchInput" class="topbar-search-input" placeholder="학생 이름(또는 학번)을 입력해주세요" autocomplete="off" />
+        <button type="button" id="studentSearchBtn" class="topbar-search-btn" aria-label="검색">🔍</button>
+        <div class="topbar-search-suggestions" id="studentSearchSuggestions"></div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-download">
+          <button type="button" id="downloadBtn" class="icon-btn" title="다운로드" aria-label="다운로드">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="download-panel" id="downloadPanel" hidden>
+            <h3>다운로드</h3>
+            <p class="panel-desc">포함할 내용과 파일 형식을 선택하세요. PDF는 인쇄 창이 열리며 거기서 "PDF로 저장"을 선택하면 됩니다. (그래프는 PDF에만 포함되며, 현재 선택된 기간이 그대로 적용됩니다)</p>
+            <div class="download-section">
+              <span class="download-label">포함할 내용</span>
+              <label class="download-check"><input type="checkbox" value="ranking" checked> 학생별 순위</label>
+              <label class="download-check"><input type="checkbox" value="grade" checked> 학년별 현황</label>
+              <label class="download-check"><input type="checkbox" value="repeat" checked> 반복 위반 학생</label>
+              <label class="download-check"><input type="checkbox" value="records" checked> 원본 기록</label>
+            </div>
+            <div class="download-section">
+              <span class="download-label">파일 형식</span>
+              <label class="download-radio"><input type="radio" name="downloadFormat" value="pdf" checked> PDF (.pdf)</label>
+              <label class="download-radio"><input type="radio" name="downloadFormat" value="xlsx"> 엑셀 (.xlsx)</label>
+            </div>
+            <p class="password-modal-error" id="downloadError" hidden></p>
+            <div class="password-modal-actions">
+              <button type="button" class="small-button ghost" id="downloadCancelBtn">취소</button>
+              <button type="button" class="small-button" id="downloadConfirmBtn">다운로드</button>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-meta" id="topMeta">데이터를 업로드해 주세요</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="mega-nav" id="megaNav">
+    <ul class="mega-nav-list">
+      <li class="mega-nav-item mega-nav-home">
+        <span class="mega-nav-label" id="homeLogoBtn" data-view="view-home" title="홈으로" aria-label="홈으로 이동">
+          <svg class="home-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M4 11.5L12 4l8 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 10v9a1 1 0 0 0 1 1h3.5v-5.5a1.5 1.5 0 0 1 1.5-1.5h0a1.5 1.5 0 0 1 1.5 1.5V20H17a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </li>
+      <li class="mega-nav-item">
+        <span class="mega-nav-label">벌점 현황</span>
+        <ul class="mega-nav-dropdown">
+          <li data-view="view-kpi">전체 건수·비율</li>
+          <li data-view="view-ranking">벌점 순위</li>
+          <li data-view="view-repeat-ranking">반복 벌점 순위</li>
+          <li data-view="view-calendar">월별 추이</li>
+          <li data-view="view-grade-chart">학년·항목별 현황</li>
+        </ul>
+      </li>
+      <li class="mega-nav-item">
+        <span class="mega-nav-label">반복 위반 학생</span>
+        <ul class="mega-nav-dropdown">
+          <li data-view="view-tier-settings">후속지도 등급 기준</li>
+          <li data-view="view-repeat-table">반복 위반 학생 표</li>
+          <li data-view="view-behavior">반복 행동 유형</li>
+        </ul>
+      </li>
+      <li class="mega-nav-item">
+        <span class="mega-nav-label" data-view="view-class-status">반별 현황</span>
+      </li>
+      <li class="mega-nav-item">
+        <span class="mega-nav-label">상점 현황</span>
+        <ul class="mega-nav-dropdown">
+          <li data-view="view-merit-ranking">상점 순위</li>
+          <li data-view="view-merit-chart">상점 그래프</li>
+          <li data-view="view-merit-overview">상점 요약</li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <section class="upload-box" id="uploadBox">
+    <div class="upload-col">
+      <label for="fileInput" class="upload-label" id="dropZone">
+        <div class="upload-icon">📁</div>
+        <div class="upload-text">
+          <strong>엑셀 파일을 여기로 드래그하거나 클릭해서 업로드하세요</strong>
+          <span>.xlsx / .xls 지원</span>
+        </div>
+      </label>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" hidden />
+      <div class="upload-actions">
+        <button class="small-button ghost" id="resetBtn" type="button">데이터 초기화</button>
+      </div>
+    </div>
+    <div class="period-col">
+      <div class="period-box" id="periodBox">
+        <div class="period-box-header">
+          <span class="period-icon">📅</span>
+          <div class="period-box-title">
+            <strong>기간 선택</strong>
+            <span>선택한 기간에 맞춰 모든 화면이 자동으로 갱신됩니다</span>
+          </div>
+        </div>
+        <div class="period-inputs">
+          <label class="period-field">
+            <span>시작일</span>
+            <input type="date" id="periodStartInput" />
+          </label>
+          <span class="period-tilde">~</span>
+          <label class="period-field">
+            <span>종료일</span>
+            <input type="date" id="periodEndInput" />
+          </label>
+          <div class="period-actions" id="periodActions">
+            <button type="button" class="small-button ghost" id="periodResetBtn">전체 기간</button>
+            <button type="button" class="small-button" id="periodApplyBtn">적용</button>
+          </div>
+        </div>
+        <p class="period-status" id="periodStatusText" hidden></p>
+      </div>
+    </div>
+    <div id="uploadStatus" class="upload-status"></div>
+  </section>
+
+  <main class="content">
+    <section class="view-section active" id="view-home">
+      <section class="summary-grid">
+        <article class="summary-card">
+          <span class="summary-label">전체 학생</span>
+          <strong id="summaryStudentCount">0명</strong>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">반복 벌점 기준</span>
+          <strong id="summaryRepeatThreshold">3회 이상</strong>
+          <p>후속지도 대상 자동 선별 기준</p>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>학년별 벌점 랭킹</h2>
+          </div>
+          <div class="header-actions">
+            <div class="view-toggle" data-toggle="gradeRanking">
+              <button type="button" class="toggle-btn active" data-mode="table">표</button>
+              <button type="button" class="toggle-btn" data-mode="chart">그래프</button>
+            </div>
+            <span class="badge" id="gradeCountBadge">학년 0개</span>
+          </div>
+        </div>
+        <div class="table-scroll" id="gradeRankingTableWrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>순위</th><th>학년</th><th>학생 수</th><th>벌점 합계</th><th>1인 평균 벌점</th><th>벌점 횟수</th><th>상점 합계</th><th>순점수</th>
+              </tr>
+            </thead>
+            <tbody id="gradeRankingBody"><tr><td colspan="8" class="empty-row">불러오는 중...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="chart-box" id="gradeRankingChartWrap" hidden><div id="gradeRankingChart" class="svg-chart-wrap"></div></div>
+      </section>
+    </section>
+
+    <div class="view-container" id="viewContainer">
+      <section class="view-section" id="view-kpi">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>전체 건수 · 비율</h2>
+              <p class="panel-desc">상점·벌점 건수와 순점수를 한 번에 확인합니다.</p>
+            </div>
+            <span class="badge" id="refDateBadge">기준일 미설정</span>
+          </div>
+          <div class="kpi-grid">
+            <article class="kpi-card"><span>총 건수</span><strong id="kpiTotal">0</strong></article>
+            <article class="kpi-card reward-kpi"><span>상점 건수</span><strong id="kpiMerit">0</strong></article>
+            <article class="kpi-card penalty-kpi"><span>벌점 건수</span><strong id="kpiDemerit">0</strong></article>
+            <article class="kpi-card"><span>벌점 비율</span><strong id="kpiDemeritRatio">0%</strong></article>
+            <article class="kpi-card"><span>상점 비율</span><strong id="kpiMeritRatio">0%</strong></article>
+            <article class="kpi-card"><span>순점수 합계</span><strong id="kpiNet">0</strong></article>
+          </div>
+        </section>
+      </section>
+
+      <section class="view-section" id="view-ranking">
+        <section class="panel ranking-panel">
+          <div class="panel-header">
+            <div>
+              <h2>벌점 순위</h2>
+              <p class="panel-desc">기본 10명씩 표시하며, 표시 인원수와 페이지를 선택할 수 있습니다.</p>
+            </div>
+            <span class="badge" id="studentCount">학생 0명</span>
+          </div>
+          <div class="filter-row grade-filter-row" id="rankingGradeFilterRow">
+            <button class="filter-btn active" data-grade="all">전체</button>
+          </div>
+          <div class="page-size-row" id="rankingPageSize"></div>
+          <div class="table-scroll">
+            <table class="data-table compact-table">
+              <thead><tr><th>순위</th><th>이름</th><th>학번</th><th>벌점 합계</th><th>상점 합계</th><th>순점수</th></tr></thead>
+              <tbody id="rankingBody"><tr><td colspan="6" class="empty-row">불러오는 중...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="rankingPagination"></div>
+        </section>
+      </section>
+
+      <section class="view-section" id="view-repeat-ranking">
+        <section class="panel ranking-panel">
+          <div class="panel-header">
+            <div>
+              <h2>반복 벌점 순위</h2>
+              <p class="panel-desc">벌점 횟수가 기준 이상인 학생만 보여줍니다.</p>
+            </div>
+            <span class="badge badge-warning" id="repeatThresholdBadge">기준: 3회 이상</span>
+          </div>
+          <div class="filter-row grade-filter-row" id="repeatGradeFilterRow">
+            <button class="filter-btn active" data-grade="all">전체</button>
+          </div>
+          <div class="page-size-row" id="repeatPageSize"></div>
+          <div class="table-scroll">
+            <table class="data-table compact-table">
+              <thead><tr><th>순위</th><th>이름</th><th>학번</th><th>벌점 횟수</th><th>벌점 합계</th><th>후속지도</th></tr></thead>
+              <tbody id="repeatBody"><tr><td colspan="6" class="empty-row">불러오는 중...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="repeatPagination"></div>
+        </section>
+      </section>
+
+      <section class="view-section" id="view-calendar">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>일별 현황 — 캘린더</h2>
+            <div class="cal-nav">
+              <select class="page-size-select" id="calYearSelect" aria-label="연도 선택"></select>
+              <select class="page-size-select" id="calMonthSelect" aria-label="월 선택"></select>
+              <button class="btn" id="calTodayBtn" type="button">기준월</button>
+            </div>
+          </div>
+          <p class="panel-desc" id="calendarDesc">날짜 컬럼이 필요합니다.</p>
+          <div class="calendar-legend">
+            <span class="legend-item"><span class="legend-dot merit"></span>상점</span>
+            <span class="legend-item"><span class="legend-dot demerit"></span>벌점</span>
+            <span class="legend-item"><span class="legend-dot today"></span>기준일</span>
+          </div>
+          <div class="calendar-weekdays">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <div class="calendar-summary" id="calendarSummary"></div>
+        </div>
+      </section>
+
+      <section class="view-section" id="view-grade-chart">
+        <div class="grid-2">
+          <section class="panel">
+            <div class="panel-header">
+              <h2>학년별 현황</h2>
+              <div class="view-toggle" data-toggle="gradeStatus">
+                <button type="button" class="toggle-btn active" data-mode="table">표</button>
+                <button type="button" class="toggle-btn" data-mode="chart">그래프</button>
+              </div>
+            </div>
+            <div class="table-scroll" id="gradeStatusTableWrap"><table class="data-table">
+              <thead><tr><th>학년</th><th>상점</th><th>벌점</th><th>총 건수</th></tr></thead>
+              <tbody id="gradeTableBody"><tr><td colspan="4" class="empty-row">데이터를 업로드해 주세요.</td></tr></tbody>
+            </table></div>
+            <div class="chart-box" id="gradeStatusChartWrap" hidden><div id="gradeStatusChart" class="svg-chart-wrap"></div></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>벌점 항목별 현황</h2>
+              <div class="view-toggle" data-toggle="itemStatus">
+                <button type="button" class="toggle-btn active" data-mode="table">표</button>
+                <button type="button" class="toggle-btn" data-mode="chart">그래프</button>
+              </div>
+            </div>
+            <p class="panel-desc" id="itemDesc">항목 컬럼이 없으면 상벌점 내역을 항목으로 사용합니다.</p>
+            <div class="page-size-row" id="itemsPageSize"></div>
+            <div class="table-scroll" id="itemStatusTableWrap"><table class="data-table">
+              <thead><tr><th>항목</th><th>건수</th><th>비율</th></tr></thead>
+              <tbody id="itemTableBody"><tr><td colspan="3" class="empty-row">데이터를 업로드해 주세요.</td></tr></tbody>
+            </table></div>
+            <div class="pagination" id="itemsPagination"></div>
+            <div class="chart-box" id="itemStatusChartWrap" hidden><div id="itemStatusChart" class="svg-chart-wrap"></div></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view-section" id="view-tier-settings">
+        <section class="panel">
+          <div class="panel-header"><h2>후속지도 등급 기준</h2></div>
+          <div class="tier-ladder" id="tierLadder"></div>
+          <p class="panel-desc">기준값은 화면에서 조정할 수 있고, 조정 즉시 반복 위반 학생 표에 반영됩니다.</p>
+          <div class="settings-grid">
+            <label>관심 · 벌점 횟수 ≥ <input type="number" id="th-attentionCount" min="1" value="2"></label>
+            <label>관심 · 최근14일 횟수 ≥ <input type="number" id="th-attentionRecent" min="1" value="2"></label>
+            <label>지도필요 · 벌점 횟수 ≥ <input type="number" id="th-guideCount" min="1" value="3"></label>
+            <label>지도필요 · 동일항목 횟수 ≥ <input type="number" id="th-guideSameItem" min="1" value="3"></label>
+            <label>집중지도 · 벌점 횟수 ≥ <input type="number" id="th-focusCount" min="1" value="5"></label>
+            <label>집중지도 · 최근14일 횟수 ≥ <input type="number" id="th-focusRecent" min="1" value="3"></label>
+          </div>
+          <button class="small-button" id="resetThresholdsBtn" type="button">기본값으로 재설정</button>
+        </section>
+      </section>
+
+      <section class="view-section" id="view-repeat-table">
+        <section class="panel">
+          <div class="panel-header"><h2>반복 위반 학생 자동 선별표</h2><span class="badge badge-warning" id="repeatCountBadge">0명</span></div>
+          <div class="filter-row" id="tierFilterRow">
+            <button class="filter-btn active" data-tier="all">전체</button>
+            <button class="filter-btn" data-tier="관심">관심</button>
+            <button class="filter-btn" data-tier="지도필요">지도필요</button>
+            <button class="filter-btn" data-tier="집중지도">집중지도</button>
+          </div>
+          <div class="page-size-row" id="repeatDetailPageSize"></div>
+          <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>학번</th><th>이름</th><th>학년</th><th>벌점 횟수</th><th>감점 합계</th><th>상점 횟수</th><th>순점수</th><th>최다 위반 항목</th><th>동일항목 반복</th><th>최근7일</th><th>최근14일</th><th>마지막 벌점일</th><th>후속지도 등급</th></tr></thead>
+            <tbody id="repeatTableBody"><tr><td colspan="13" class="empty-row">데이터를 업로드해 주세요.</td></tr></tbody>
+          </table></div>
+          <div class="pagination" id="repeatDetailPagination"></div>
+        </section>
+      </section>
+
+      <section class="view-section" id="view-behavior">
+        <section class="panel">
+          <div class="panel-header"><h2>가장 많이 발생한 벌점 항목 Top 3</h2></div>
+          <div class="top3-badges" id="top3Badges">데이터를 업로드해 주세요.</div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header"><h2>주별 증가 항목</h2></div>
+          <p class="panel-desc">지난주 대비 이번주 건수가 늘어난 항목입니다.</p>
+          <div class="table-scroll"><table class="data-table"><thead><tr><th>항목</th><th>지난주</th><th>이번주</th><th>증가</th></tr></thead><tbody id="increaseTableBody"><tr><td colspan="4" class="empty-row">데이터를 업로드해 주세요.</td></tr></tbody></table></div>
+        </section>
+
+        <div class="grid-2">
+          <section class="panel">
+            <div class="panel-header"><h2>학년별 주요 위반 항목</h2></div>
+            <div class="table-scroll"><table class="data-table"><thead><tr><th>학년</th><th>최다 항목</th><th>건수</th></tr></thead><tbody id="gradeItemTableBody"><tr><td colspan="3" class="empty-row">데이터를 업로드해 주세요.</td></tr></tbody></table></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><h2>동일 항목 반복 학생 수</h2></div>
+            <p class="panel-desc">같은 항목으로 2회 이상 벌점을 받은 학생 수입니다.</p>
+            <div class="table-scroll"><table class="data-table"><thead><tr><th>항목</th><th>반복 학생 수</th><th>전체 발생 건수</th></tr></thead><tbody id="sameItemTableBody"><tr><td colspan="3" class="empty-row">데이터를 업로드해 주세요.</td></tr></tbody></table></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view-section" id="view-class-status">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>반별 현황</h2>
+              <p class="panel-desc">학년과 반을 고르면 해당 반 학생 목록이 표로 나타납니다. 이름을 누르면 상세 내역이 열립니다.</p>
+            </div>
+            <span class="badge" id="classStudentBadge">학생 0명</span>
+          </div>
+
+          <div class="class-select-row">
+            <label class="class-select">
+              <span class="class-select-label">학년</span>
+              <select id="classGradeSelect" class="class-select-input" aria-label="학년 선택"></select>
+            </label>
+            <label class="class-select">
+              <span class="class-select-label">반</span>
+              <select id="classRoomSelect" class="class-select-input" aria-label="반 선택"></select>
+            </label>
+            <span class="kakao-link-badge" id="kakaoLinkBadge">확인 중...</span>
+            <button type="button" class="small-button ghost" id="kakaoLinkBtn">카카오 연동하기</button>
+            <button type="button" class="small-button kakao-send-btn" id="kakaoSendBtn" disabled>💬 선생님께 카톡으로 보내기</button>
+            <span class="kakao-send-status" id="kakaoSendStatus"></span>
+          </div>
+
+          <div class="class-summary" id="classSummary" hidden>
+            <div class="class-summary-item">
+              <span class="class-summary-label">상점 합계</span>
+              <strong class="reward" id="classSummaryMerit">0</strong>
+            </div>
+            <div class="class-summary-item">
+              <span class="class-summary-label">벌점 합계</span>
+              <strong class="penalty" id="classSummaryDemerit">0</strong>
+            </div>
+            <div class="class-summary-item">
+              <span class="class-summary-label">순점수</span>
+              <strong id="classSummaryNet">0</strong>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="data-table class-status-table">
+              <thead>
+                <tr>
+                  <th>이름</th>
+                  <th>학번</th>
+                  <th class="num">상점 합계</th>
+                  <th class="num">벌점 합계</th>
+                  <th>분류</th>
+                  <th class="num">순점수</th>
+                </tr>
+              </thead>
+              <tbody id="classStatusBody">
+                <tr><td colspan="6" class="empty-row">데이터를 업로드해 주세요.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="view-section" id="view-merit-ranking">
+        <section class="panel ranking-panel">
+          <div class="panel-header">
+            <div>
+              <h2>상점 순위</h2>
+              <p class="panel-desc">기본 10명씩 표시하며, 표시 인원수와 페이지를 선택할 수 있습니다.</p>
+            </div>
+            <span class="badge" id="meritStudentCount">학생 0명</span>
+          </div>
+          <div class="filter-row grade-filter-row" id="meritRankingGradeFilterRow">
+            <button class="filter-btn active" data-grade="all">전체</button>
+          </div>
+          <div class="page-size-row" id="meritRankingPageSize"></div>
+          <div class="table-scroll">
+            <table class="data-table compact-table">
+              <thead><tr><th>순위</th><th>이름</th><th>학번</th><th>상점 합계</th><th>벌점 합계</th><th>순점수</th></tr></thead>
+              <tbody id="meritRankingBody"><tr><td colspan="6" class="empty-row">불러오는 중...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="meritRankingPagination"></div>
+        </section>
+      </section>
+
+      <section class="view-section" id="view-merit-chart">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>학년별 상점/벌점 균형</h2>
+            <div class="view-toggle" data-toggle="meritBalance">
+              <button type="button" class="toggle-btn active" data-mode="table">표</button>
+              <button type="button" class="toggle-btn" data-mode="chart">그래프</button>
+            </div>
+          </div>
+          <p class="panel-desc">상점 기록이 없는 학년은 노란색으로 표시됩니다.</p>
+          <div class="table-scroll" id="meritBalanceTableWrap"><table class="data-table"><thead><tr><th>학년</th><th>상점 건수</th><th>벌점 건수</th><th>상점/벌점 비율</th></tr></thead><tbody id="meritDistTableBody"><tr><td colspan="4" class="empty-row">데이터를 업로드해 주세요.</td></tr></tbody></table></div>
+          <div class="chart-box" id="meritBalanceChartWrap" hidden><div id="meritBalanceChart" class="svg-chart-wrap"></div></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>상점 항목별 비율</h2>
+            <div class="view-toggle" data-toggle="meritItemStatus">
+              <button type="button" class="toggle-btn active" data-mode="table">표</button>
+              <button type="button" class="toggle-btn" data-mode="chart">그래프</button>
+            </div>
+          </div>
+          <div class="page-size-row" id="meritItemsPageSize"></div>
+          <div class="table-scroll" id="meritItemStatusTableWrap"><table class="data-table"><thead><tr><th>항목</th><th>건수</th><th>비율</th></tr></thead><tbody id="meritItemTableBody"><tr><td colspan="3" class="empty-row">데이터를 업로드해 주세요.</td></tr></tbody></table></div>
+          <div class="pagination" id="meritItemsPagination"></div>
+          <div class="chart-box" id="meritItemStatusChartWrap" hidden><div id="meritItemStatusChart" class="svg-chart-wrap"></div></div>
+        </section>
+      </section>
+
+      <section class="view-section" id="view-merit-overview">
+        <section class="panel">
+          <div class="panel-header"><h2>상점 활성화 현황</h2></div>
+          <div class="kpi-grid">
+            <article class="kpi-card reward-kpi"><span>상점 부여 건수</span><strong id="meritKpiCount">0</strong></article>
+            <article class="kpi-card"><span>벌점 대비 상점 비율</span><strong id="meritKpiRatio">0%</strong></article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header"><h2>상점 항목 Top 3</h2></div>
+          <div class="top3-badges" id="meritTop3Badges">데이터를 업로드해 주세요.</div>
+        </section>
+      </section>
+    </div>
+  </main>
+
+  <div class="student-modal-overlay" id="studentModalOverlay">
+    <div class="student-modal" role="dialog" aria-modal="true" aria-labelledby="studentModalName">
+      <button type="button" class="student-modal-close" id="studentModalClose" aria-label="닫기">✕</button>
+      <div id="studentModalBody"></div>
+    </div>
+  </div>
+
+  <div class="password-modal-overlay" id="tierPasswordOverlay">
+    <div class="password-modal" role="dialog" aria-modal="true" aria-labelledby="tierPasswordTitle">
+      <button type="button" class="student-modal-close" id="tierPasswordClose" aria-label="닫기">✕</button>
+      <h3 id="tierPasswordTitle">후속지도 등급 기준</h3>
+      <p class="panel-desc">비밀번호를 입력하세요.</p>
+      <input type="password" id="tierPasswordInput" class="password-modal-input" placeholder="비밀번호" autocomplete="off" />
+      <p class="password-modal-error" id="tierPasswordError" hidden>비밀번호가 올바르지 않습니다.</p>
+      <div class="password-modal-actions">
+        <button type="button" class="small-button ghost" id="tierPasswordCancel">취소</button>
+        <button type="button" class="small-button" id="tierPasswordSubmit">확인</button>
+      </div>
+      <button type="button" class="link-button" id="tierAdminBtn">비밀번호를 잊으셨나요? 관리자 권한 인증</button>
+    </div>
+  </div>
+
+  <div class="password-modal-overlay" id="adminNameOverlay">
+    <div class="password-modal" role="dialog" aria-modal="true" aria-labelledby="adminNameTitle">
+      <button type="button" class="student-modal-close" id="adminNameClose" aria-label="닫기">✕</button>
+      <h3 id="adminNameTitle">관리자 권한 인증</h3>
+      <p class="panel-desc">선생님 이름을 입력해주세요.</p>
+      <input type="text" id="adminNameInput" class="password-modal-input" placeholder="이름" autocomplete="off" />
+      <p class="password-modal-error" id="adminNameError" hidden>권한이 없는 이름입니다.</p>
+      <div class="password-modal-actions">
+        <button type="button" class="small-button ghost" id="adminNameCancel">취소</button>
+        <button type="button" class="small-button" id="adminNameSubmit">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="password-modal-overlay" id="adminSetPasswordOverlay">
+    <div class="password-modal" role="dialog" aria-modal="true" aria-labelledby="adminSetPasswordTitle">
+      <button type="button" class="student-modal-close" id="adminSetPasswordClose" aria-label="닫기">✕</button>
+      <h3 id="adminSetPasswordTitle">권한 발급 — 새 비밀번호 설정</h3>
+      <p class="panel-desc">후속지도 등급 기준 화면의 새 비밀번호를 설정하세요. (4자 이상)</p>
+      <input type="password" id="adminNewPasswordInput" class="password-modal-input" placeholder="새 비밀번호" autocomplete="off" />
+      <input type="password" id="adminNewPasswordConfirm" class="password-modal-input" placeholder="새 비밀번호 확인" autocomplete="off" style="margin-top:8px;" />
+      <p class="password-modal-error" id="adminSetPasswordError" hidden></p>
+      <p class="password-modal-success" id="adminSetPasswordSuccess" hidden>비밀번호가 변경되었습니다.</p>
+      <div class="password-modal-actions">
+        <button type="button" class="small-button ghost" id="adminSetPasswordCancel">취소</button>
+        <button type="button" class="small-button" id="adminSetPasswordSubmit">설정</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/home.js"></script>
+</body>
+</html>
